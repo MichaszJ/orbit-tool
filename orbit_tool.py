@@ -1,8 +1,11 @@
 import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
+import numpy as np
+from torch import angle
 
 from orbital_dynamics import two_body_propagator, three_body_cr_propagator, three_body_propagator
+from orbital_elements import ground_track
 
 st.title('Orbit Tool')
 st.write('Created by Michal Jagodzinski')
@@ -231,4 +234,57 @@ if module_option == 'Orbit Propagator':
         st.plotly_chart(fig, width=1100, height=900)
 
 elif module_option == 'Ground Track':
-    st.markdown('## AAAA')
+    st.sidebar.markdown('## Orbital Elements')
+    angle_degrees = st.sidebar.checkbox('Use degrees?')
+
+    if angle_degrees:
+        elements = {
+                    'Semi-Major Axis': 8350, 
+                    'Eccentricity': 0.19760, 
+                    'Inclination': 60, 
+                    'Right Ascension': 270, 
+                    'Argument of Perigee': 45, 
+                    'True Anomaly': 230
+        }
+    else:
+        elements = {
+                'Semi-Major Axis': 8350, 
+                'Eccentricity': 0.19760, 
+                'Inclination': np.radians(60), 
+                'Right Ascension': np.radians(270), 
+                'Argument of Perigee': np.radians(45), 
+                'True Anomaly': np.radians(230)
+        }
+
+    for key in elements:
+        elements[key] = st.sidebar.text_input(key, float(elements[key]))
+
+    st.sidebar.markdown('## Options')
+    t_init = st.sidebar.text_input('Initial Time (s)', 0.0)
+    t_final = st.sidebar.text_input('Final Time (s)', 3.25 * 7593.481415887944)
+    num_steps = st.sidebar.text_input('Step Number', 1000)
+        
+    run_ground_track = st.sidebar.checkbox('Run Ground Track')
+    
+    if run_ground_track:
+        if angle_degrees:
+            for key in elements:
+                if key in ['Inclination', 'Right Ascension', 'Argument of Perigee', 'True Anomaly']:
+                    elements[key] = np.radians(float(elements[key]))
+                else:
+                    elements[key] = float(elements[key])
+        else:
+            for key in elements:
+                elements[key] = float(elements[key])
+
+        t_init = float(t_init)
+        t_final = float(t_final)
+        num_steps = int(num_steps)
+
+        elements_list = [elements[key] for key in elements]
+        lon, lat = ground_track(elements_list, t_init=t_init, t_final=t_final, num_steps=num_steps)
+        lon, lat = np.degrees(lon), np.degrees(lat)
+
+        fig = go.Figure()
+        fig.add_trace(go.Scattergeo(lat=lat, lon=lon))
+        st.plotly_chart(fig)
