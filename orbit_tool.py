@@ -2,7 +2,6 @@ import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
 import numpy as np
-from torch import angle
 
 from orbital_dynamics import two_body_propagator, three_body_cr_propagator, three_body_propagator
 from orbital_elements import ground_track
